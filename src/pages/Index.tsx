@@ -196,7 +196,7 @@ const Index = () => {
                   </Button>
                 </div>
                 <p className="text-foreground bg-muted/50 rounded-lg p-4 text-sm leading-relaxed">
-                  {result.post_text}
+                  {result.text}
                 </p>
               </div>
 
