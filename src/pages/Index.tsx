@@ -228,7 +228,7 @@ const Index = () => {
                   </span>
                   <div className="rounded-xl overflow-hidden border border-border">
                     <img
-                      src={result.image_url}
+                      src={result.image}
                       alt={result.headline}
                       className="w-full h-auto object-cover"
                     />
