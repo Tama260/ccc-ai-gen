@@ -236,7 +236,7 @@ const Index = () => {
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={() => downloadImage(result.image_url)}
+                    onClick={() => downloadImage(result.image)}
                   >
                     <Download className="h-4 w-4 mr-2" />
                     Download Image
