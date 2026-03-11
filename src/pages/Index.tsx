@@ -38,29 +38,15 @@ const Index = () => {
     const body = JSON.stringify({ idea, goal, style });
 
     try {
-      const [res1, res2] = await Promise.allSettled([
-        fetch("https://kaicella.app.n8n.cloud/webhook-test/ccc-ai-generator", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body,
-        }),
-        fetch("https://kaicella.app.n8n.cloud/webhook/ccc-ai-generator", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body,
-        }),
-      ]);
+      const res = await fetch("https://kaicella.app.n8n.cloud/webhook/ccc-ai-generator", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+      });
 
-      let data: CampaignResult | null = null;
+      if (!res.ok) throw new Error("Request failed");
 
-      for (const res of [res1, res2]) {
-        if (res.status === "fulfilled" && res.value.ok) {
-          data = await res.value.json();
-          break;
-        }
-      }
-
-      if (!data) throw new Error("No successful response");
+      const data: CampaignResult = await res.json();
 
       setResult(data);
     } catch {
