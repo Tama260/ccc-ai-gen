@@ -14,9 +14,9 @@ import { toast } from "sonner";
 
 interface CampaignResult {
   headline: string;
-  post_text: string;
+  text: string;
   description: string;
-  image_url: string;
+  image: string;
 }
 
 const Index = () => {
