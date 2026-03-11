@@ -14,9 +14,9 @@ import { toast } from "sonner";
 
 interface CampaignResult {
   headline: string;
-  post_text: string;
+  text: string;
   description: string;
-  image_url: string;
+  image: string;
 }
 
 const Index = () => {
@@ -189,14 +189,14 @@ const Index = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => copyToClipboard(result.post_text)}
+                    onClick={() => copyToClipboard(result.text)}
                   >
                     <Copy className="h-4 w-4 mr-1" />
                     Copy
                   </Button>
                 </div>
                 <p className="text-foreground bg-muted/50 rounded-lg p-4 text-sm leading-relaxed">
-                  {result.post_text}
+                  {result.text}
                 </p>
               </div>
 
@@ -221,14 +221,14 @@ const Index = () => {
               </div>
 
               {/* Image */}
-              {result.image_url && (
+              {result.image && (
                 <div className="space-y-3">
                   <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
                     Campaign Image
                   </span>
                   <div className="rounded-xl overflow-hidden border border-border">
                     <img
-                      src={result.image_url}
+                      src={result.image}
                       alt={result.headline}
                       className="w-full h-auto object-cover"
                     />
@@ -236,7 +236,7 @@ const Index = () => {
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={() => downloadImage(result.image_url)}
+                    onClick={() => downloadImage(result.image)}
                   >
                     <Download className="h-4 w-4 mr-2" />
                     Download Image
