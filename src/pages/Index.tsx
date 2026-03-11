@@ -189,7 +189,7 @@ const Index = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => copyToClipboard(result.post_text)}
+                    onClick={() => copyToClipboard(result.text)}
                   >
                     <Copy className="h-4 w-4 mr-1" />
                     Copy
