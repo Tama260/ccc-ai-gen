@@ -3,6 +3,8 @@
 ## Project info
 
 **URL**: https://github.com/Tama260/ccc-ai-gen.git
+Deployment: ccc-ai-r7v84u1xp-tama260s-projects.vercel.app
+Domain : https://asshafashop.dpdns.org/
 
 ## How can I edit this code?
 
