@@ -38,7 +38,7 @@ const Index = () => {
     const body = JSON.stringify({ idea, goal, style });
 
     try {
-      const res = await fetch("https://kaicella.app.n8n.cloud/webhook/ccc-ai-generator", {
+      const res = await fetch("https://eor3jlr74cwcxbt.m.pipedream.net", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body,
