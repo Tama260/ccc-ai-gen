@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,9 +9,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Copy, Download, Sparkles, RefreshCw, ImageIcon } from "lucide-react";
+import { Loader2, Copy, Download, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import html2canvas from "html2canvas";
 
 interface CampaignResult {
   headline: string;
@@ -26,37 +27,7 @@ const Index = () => {
   const [style, setStyle] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<CampaignResult | null>(null);
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [imageError, setImageError] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
-  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const MAX_RETRIES = 3;
-
-  const retryImage = useCallback(() => {
-    if (retryCount < MAX_RETRIES && result?.image) {
-      setImageError(false);
-      setImageLoaded(false);
-      setRetryCount((c) => c + 1);
-      // Force reload by appending a cache-busting param
-      setResult((prev) =>
-        prev
-          ? {
-              ...prev,
-              image: prev.image.split("&_retry=")[0] + "&_retry=" + Date.now(),
-            }
-          : prev
-      );
-    }
-  }, [retryCount, result?.image]);
-
-  const handleImageError = useCallback(() => {
-    setImageError(true);
-    if (retryCount < MAX_RETRIES) {
-      retryTimerRef.current = setTimeout(() => {
-        retryImage();
-      }, 5000);
-    }
-  }, [retryCount, retryImage]);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   const handleGenerate = async () => {
     if (!idea || !goal || !style) {
@@ -67,24 +38,17 @@ const Index = () => {
     setLoading(true);
     setResult(null);
 
-    const body = JSON.stringify({ body: { idea, goal, style } });
-
     try {
       const res = await fetch("https://eoi321wuqzkea17.m.pipedream.net", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body,
+        body: JSON.stringify({ body: { idea, goal, style } }),
       });
 
       if (!res.ok) throw new Error("Request failed");
 
       const data = await res.json();
       const result: CampaignResult = Array.isArray(data) ? data[0] : data;
-
-      setImageLoaded(false);
-      setImageError(false);
-      setRetryCount(0);
-      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
       setResult(result);
     } catch {
       toast.error("Failed to generate campaign kit. Please try again.");
@@ -98,17 +62,22 @@ const Index = () => {
     toast.success("Copied to clipboard!");
   };
 
-  const downloadImage = (url: string) => {
-    const a = document.createElement("a");
-    a.href = url;
-    a.target = "_blank";
-    a.download = "campaign-image";
-    a.click();
+  const downloadCard = async () => {
+    if (!cardRef.current) return;
+    try {
+      const canvas = await html2canvas(cardRef.current, { scale: 2, useCORS: true });
+      const link = document.createElement("a");
+      link.download = "campaign-image.png";
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+      toast.success("Image downloaded!");
+    } catch {
+      toast.error("Failed to download image.");
+    }
   };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="border-b border-border/50 bg-card/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="container max-w-4xl mx-auto px-4 py-5 text-center">
           <div className="flex items-center justify-center gap-2 mb-1">
@@ -117,23 +86,16 @@ const Index = () => {
               CCC AI
             </h1>
           </div>
-          <p className="text-sm font-medium text-muted-foreground">
-            Creator Create Creation AI
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            AI tool for creators and marketers.
-          </p>
+          <p className="text-sm font-medium text-muted-foreground">Creator Create Creation AI</p>
+          <p className="text-xs text-muted-foreground mt-1">AI tool for creators and marketers.</p>
         </div>
       </header>
 
       <main className="container max-w-2xl mx-auto px-4 py-10 space-y-8">
-        {/* Input Section */}
         <Card className="shadow-lg shadow-primary/5 border-border/50">
           <CardContent className="p-6 space-y-5">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">
-                Campaign Idea
-              </label>
+              <label className="text-sm font-medium text-foreground">Campaign Idea</label>
               <Textarea
                 placeholder="Example: Launch a new coffee brand using a viral Instagram campaign."
                 value={idea}
@@ -144,13 +106,9 @@ const Index = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">
-                  Campaign Goal
-                </label>
+                <label className="text-sm font-medium text-foreground">Campaign Goal</label>
                 <Select value={goal} onValueChange={setGoal}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select goal" />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Select goal" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Traffic">Traffic</SelectItem>
                     <SelectItem value="Conversion">Conversion</SelectItem>
@@ -162,13 +120,9 @@ const Index = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">
-                  Creative Style
-                </label>
+                <label className="text-sm font-medium text-foreground">Creative Style</label>
                 <Select value={style} onValueChange={setStyle}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select style" />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Select style" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Clean">Clean</SelectItem>
                     <SelectItem value="Meme">Meme</SelectItem>
@@ -187,134 +141,68 @@ const Index = () => {
               onClick={handleGenerate}
               disabled={loading}
             >
-              {loading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <Sparkles className="h-5 w-5" />
-              )}
+              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
               Generate Campaign Kit
             </Button>
           </CardContent>
         </Card>
 
-        {/* Loading State */}
         {loading && (
           <div className="flex flex-col items-center justify-center py-16 space-y-4">
-            <div className="relative">
-              <div className="h-16 w-16 rounded-full border-4 border-muted border-t-primary animate-spin" />
-            </div>
+            <div className="h-16 w-16 rounded-full border-4 border-muted border-t-primary animate-spin" />
             <p className="text-muted-foreground font-medium animate-pulse">
               CCC AI is generating your campaign kit...
             </p>
           </div>
         )}
 
-        {/* Result Section */}
         {result && !loading && (
           <Card className="shadow-lg shadow-primary/5 border-border/50 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
             <CardContent className="p-6 space-y-6">
-              <h2 className="text-2xl font-bold text-foreground">
-                {result.headline}
-              </h2>
+              <h2 className="text-2xl font-bold text-foreground">{result.headline}</h2>
 
-              {/* Post Text */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                    Post Text
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => copyToClipboard(result.text)}
-                  >
-                    <Copy className="h-4 w-4 mr-1" />
-                    Copy
+                  <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Post Text</span>
+                  <Button variant="ghost" size="sm" onClick={() => copyToClipboard(result.text)}>
+                    <Copy className="h-4 w-4 mr-1" /> Copy
                   </Button>
                 </div>
-                <p className="text-foreground bg-muted/50 rounded-lg p-4 text-sm leading-relaxed">
-                  {result.text}
-                </p>
+                <p className="text-foreground bg-muted/50 rounded-lg p-4 text-sm leading-relaxed">{result.text}</p>
               </div>
 
-              {/* Description */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                    Description
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => copyToClipboard(result.description)}
-                  >
-                    <Copy className="h-4 w-4 mr-1" />
-                    Copy
+                  <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Description</span>
+                  <Button variant="ghost" size="sm" onClick={() => copyToClipboard(result.description)}>
+                    <Copy className="h-4 w-4 mr-1" /> Copy
                   </Button>
                 </div>
-                <p className="text-foreground bg-muted/50 rounded-lg p-4 text-sm leading-relaxed">
-                  {result.description}
-                </p>
+                <p className="text-foreground bg-muted/50 rounded-lg p-4 text-sm leading-relaxed">{result.description}</p>
               </div>
 
-              {/* Image */}
-              {result.image && (
-                <div className="space-y-3">
-                  <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                    Campaign Image
-                  </span>
-                  <div className="rounded-xl overflow-hidden border border-border relative min-h-[200px]">
-                    {!imageLoaded && !imageError && (
-                      <div className="flex flex-col items-center justify-center py-16 space-y-3 bg-muted/30">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                        <p className="text-sm text-muted-foreground font-medium">Generating image...</p>
-                      </div>
-                    )}
-                    {imageError && retryCount >= MAX_RETRIES && (
-                      <div className="flex flex-col items-center justify-center py-16 space-y-3 bg-muted/30">
-                        <ImageIcon className="h-8 w-8 text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground font-medium">Image failed to load</p>
-                      </div>
-                    )}
-                    <img
-                      src={result.image}
-                      alt={result.headline}
-                      className={cn(
-                        "w-full h-auto object-cover transition-opacity duration-300",
-                        imageLoaded ? "opacity-100" : "opacity-0 absolute inset-0"
-                      )}
-                      onLoad={() => {
-                        setImageLoaded(true);
-                        setImageError(false);
-                      }}
-                      onError={handleImageError}
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => downloadImage(result.image)}
-                      disabled={!imageLoaded}
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      Download Image
-                    </Button>
-                    {(imageError || !imageLoaded) && (
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setRetryCount(0);
-                          retryImage();
-                        }}
-                      >
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        Retry
-                      </Button>
-                    )}
-                  </div>
+              {/* Campaign Visual Card */}
+              <div className="space-y-3">
+                <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Campaign Image</span>
+                <div
+                  ref={cardRef}
+                  className="relative w-full rounded-xl overflow-hidden flex items-center justify-center"
+                  style={{
+                    height: 300,
+                    background: "linear-gradient(135deg, #7C3AED, #EC4899)",
+                  }}
+                >
+                  <Badge className="absolute top-4 right-4 bg-white/20 text-white border-white/30 backdrop-blur-sm">
+                    {goal}
+                  </Badge>
+                  <p className="text-white font-bold text-2xl sm:text-3xl text-center px-8 leading-snug drop-shadow-lg">
+                    {result.headline}
+                  </p>
                 </div>
-              )}
+                <Button variant="outline" className="w-full" onClick={downloadCard}>
+                  <Download className="h-4 w-4 mr-2" /> Download Image
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
