@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,8 +9,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Copy, Download, Sparkles } from "lucide-react";
+import { Loader2, Copy, Download, Sparkles, RefreshCw, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface CampaignResult {
   headline: string;
@@ -25,6 +26,37 @@ const Index = () => {
   const [style, setStyle] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<CampaignResult | null>(null);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const MAX_RETRIES = 3;
+
+  const retryImage = useCallback(() => {
+    if (retryCount < MAX_RETRIES && result?.image) {
+      setImageError(false);
+      setImageLoaded(false);
+      setRetryCount((c) => c + 1);
+      // Force reload by appending a cache-busting param
+      setResult((prev) =>
+        prev
+          ? {
+              ...prev,
+              image: prev.image.split("&_retry=")[0] + "&_retry=" + Date.now(),
+            }
+          : prev
+      );
+    }
+  }, [retryCount, result?.image]);
+
+  const handleImageError = useCallback(() => {
+    setImageError(true);
+    if (retryCount < MAX_RETRIES) {
+      retryTimerRef.current = setTimeout(() => {
+        retryImage();
+      }, 5000);
+    }
+  }, [retryCount, retryImage]);
 
   const handleGenerate = async () => {
     if (!idea || !goal || !style) {
@@ -49,6 +81,10 @@ const Index = () => {
       const data = await res.json();
       const result: CampaignResult = Array.isArray(data) ? data[0] : data;
 
+      setImageLoaded(false);
+      setImageError(false);
+      setRetryCount(0);
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
       setResult(result);
     } catch {
       toast.error("Failed to generate campaign kit. Please try again.");
@@ -227,21 +263,56 @@ const Index = () => {
                   <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
                     Campaign Image
                   </span>
-                  <div className="rounded-xl overflow-hidden border border-border">
+                  <div className="rounded-xl overflow-hidden border border-border relative min-h-[200px]">
+                    {!imageLoaded && !imageError && (
+                      <div className="flex flex-col items-center justify-center py-16 space-y-3 bg-muted/30">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        <p className="text-sm text-muted-foreground font-medium">Generating image...</p>
+                      </div>
+                    )}
+                    {imageError && retryCount >= MAX_RETRIES && (
+                      <div className="flex flex-col items-center justify-center py-16 space-y-3 bg-muted/30">
+                        <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground font-medium">Image failed to load</p>
+                      </div>
+                    )}
                     <img
                       src={result.image}
                       alt={result.headline}
-                      className="w-full h-auto object-cover"
+                      className={cn(
+                        "w-full h-auto object-cover transition-opacity duration-300",
+                        imageLoaded ? "opacity-100" : "opacity-0 absolute inset-0"
+                      )}
+                      onLoad={() => {
+                        setImageLoaded(true);
+                        setImageError(false);
+                      }}
+                      onError={handleImageError}
                     />
                   </div>
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => downloadImage(result.image)}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download Image
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => downloadImage(result.image)}
+                      disabled={!imageLoaded}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download Image
+                    </Button>
+                    {(imageError || !imageLoaded) && (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setRetryCount(0);
+                          retryImage();
+                        }}
+                      >
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Retry
+                      </Button>
+                    )}
+                  </div>
                 </div>
               )}
             </CardContent>
