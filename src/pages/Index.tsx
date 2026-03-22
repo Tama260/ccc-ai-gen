@@ -25,6 +25,37 @@ const Index = () => {
   const [style, setStyle] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<CampaignResult | null>(null);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const MAX_RETRIES = 3;
+
+  const retryImage = useCallback(() => {
+    if (retryCount < MAX_RETRIES && result?.image) {
+      setImageError(false);
+      setImageLoaded(false);
+      setRetryCount((c) => c + 1);
+      // Force reload by appending a cache-busting param
+      setResult((prev) =>
+        prev
+          ? {
+              ...prev,
+              image: prev.image.split("&_retry=")[0] + "&_retry=" + Date.now(),
+            }
+          : prev
+      );
+    }
+  }, [retryCount, result?.image]);
+
+  const handleImageError = useCallback(() => {
+    setImageError(true);
+    if (retryCount < MAX_RETRIES) {
+      retryTimerRef.current = setTimeout(() => {
+        retryImage();
+      }, 5000);
+    }
+  }, [retryCount, retryImage]);
 
   const handleGenerate = async () => {
     if (!idea || !goal || !style) {
