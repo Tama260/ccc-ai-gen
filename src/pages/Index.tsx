@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Copy, Download, Sparkles } from "lucide-react";
+import { Loader2, Copy, Download, Sparkles, RefreshCw, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 
 interface CampaignResult {
