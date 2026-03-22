@@ -38,7 +38,7 @@ const Index = () => {
     const body = JSON.stringify({ idea, goal, style });
 
     try {
-      const res = await fetch("https://eor3jlr74cwcxbt.m.pipedream.net", {
+      const res = await fetch("https://eoi321wuqzkea17.m.pipedream.net", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body,
