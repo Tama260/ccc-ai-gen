@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2, Copy, Download, Sparkles, RefreshCw, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface CampaignResult {
   headline: string;
