@@ -262,21 +262,56 @@ const Index = () => {
                   <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
                     Campaign Image
                   </span>
-                  <div className="rounded-xl overflow-hidden border border-border">
+                  <div className="rounded-xl overflow-hidden border border-border relative min-h-[200px]">
+                    {!imageLoaded && !imageError && (
+                      <div className="flex flex-col items-center justify-center py-16 space-y-3 bg-muted/30">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        <p className="text-sm text-muted-foreground font-medium">Generating image...</p>
+                      </div>
+                    )}
+                    {imageError && retryCount >= MAX_RETRIES && (
+                      <div className="flex flex-col items-center justify-center py-16 space-y-3 bg-muted/30">
+                        <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground font-medium">Image failed to load</p>
+                      </div>
+                    )}
                     <img
                       src={result.image}
                       alt={result.headline}
-                      className="w-full h-auto object-cover"
+                      className={cn(
+                        "w-full h-auto object-cover transition-opacity duration-300",
+                        imageLoaded ? "opacity-100" : "opacity-0 absolute inset-0"
+                      )}
+                      onLoad={() => {
+                        setImageLoaded(true);
+                        setImageError(false);
+                      }}
+                      onError={handleImageError}
                     />
                   </div>
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => downloadImage(result.image)}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download Image
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => downloadImage(result.image)}
+                      disabled={!imageLoaded}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download Image
+                    </Button>
+                    {(imageError || !imageLoaded) && (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setRetryCount(0);
+                          retryImage();
+                        }}
+                      >
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Retry
+                      </Button>
+                    )}
+                  </div>
                 </div>
               )}
             </CardContent>
