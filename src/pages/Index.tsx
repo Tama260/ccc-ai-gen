@@ -80,6 +80,10 @@ const Index = () => {
       const data = await res.json();
       const result: CampaignResult = Array.isArray(data) ? data[0] : data;
 
+      setImageLoaded(false);
+      setImageError(false);
+      setRetryCount(0);
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
       setResult(result);
     } catch {
       toast.error("Failed to generate campaign kit. Please try again.");
