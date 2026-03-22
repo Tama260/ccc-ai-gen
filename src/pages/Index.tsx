@@ -35,7 +35,7 @@ const Index = () => {
     setLoading(true);
     setResult(null);
 
-    const body = JSON.stringify({ idea, goal, style });
+    const body = JSON.stringify({ body: { idea, goal, style } });
 
     try {
       const res = await fetch("https://eoi321wuqzkea17.m.pipedream.net", {
@@ -46,9 +46,10 @@ const Index = () => {
 
       if (!res.ok) throw new Error("Request failed");
 
-      const data: CampaignResult = await res.json();
+      const data = await res.json();
+      const result: CampaignResult = Array.isArray(data) ? data[0] : data;
 
-      setResult(data);
+      setResult(result);
     } catch {
       toast.error("Failed to generate campaign kit. Please try again.");
     } finally {
